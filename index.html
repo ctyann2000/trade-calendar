@@ -842,8 +842,10 @@ body {
           <button class="summary-tab" data-period="yearly">年</button>
           <button class="summary-tab" data-period="lifetime">全期間</button>
         </div>
-        <div class="form-group" id="summaryPeriodSelectBox" style="margin-bottom:12px;">
-          <select class="form-select" id="summaryPeriodValue"></select>
+        <div class="form-group" id="summaryPeriodSelectBox" style="margin-bottom:12px; display:flex; align-items:center; gap:8px; flex-shrink:0;">
+          <select class="form-select" id="summaryPeriodStart" style="flex:1;"></select>
+          <span style="font-weight:700; color:var(--text-secondary);">～</span>
+          <select class="form-select" id="summaryPeriodEnd" style="flex:1;"></select>
         </div>
         <div class="summary-tabs" id="summaryViewTabs" style="margin-bottom:12px;">
           <button class="summary-tab active" data-view="donut">割合 (円グラフ)</button>
@@ -1272,9 +1274,15 @@ function openSummary() {
 }
 
 function buildPeriodOptions() {
-  const sel = document.getElementById('summaryPeriodValue');
   const box = document.getElementById('summaryPeriodSelectBox');
-  sel.innerHTML = '';
+  const selStart = document.getElementById('summaryPeriodStart');
+  const selEnd = document.getElementById('summaryPeriodEnd');
+
+  const oldStart = selStart.value;
+  const oldEnd = selEnd.value;
+  selStart.innerHTML = '';
+  selEnd.innerHTML = '';
+
   const months = new Set();
   const years = new Set();
   trades.forEach(t => {
@@ -1283,23 +1291,44 @@ function buildPeriodOptions() {
   });
 
   if (summaryPeriod === 'monthly') {
-    box.style.display = 'block';
-    [...months].sort().reverse().forEach(m => {
-      const o = document.createElement('option');
-      o.value = m;
+    box.style.display = 'flex';
+    const sortedMonths = [...months].sort();
+    sortedMonths.forEach(m => {
       const parts = m.split('-');
       const yy = parts[0].substring(2);
-      o.textContent = `${yy}/${parts[1]}`;
-      sel.appendChild(o);
+      const label = `${yy}/${parts[1]}`;
+      const o1 = document.createElement('option');
+      o1.value = m;
+      o1.textContent = label;
+      selStart.appendChild(o1);
+
+      const o2 = document.createElement('option');
+      o2.value = m;
+      o2.textContent = label;
+      selEnd.appendChild(o2);
     });
+    if (sortedMonths.length > 0) {
+      selStart.value = sortedMonths.includes(oldStart) ? oldStart : sortedMonths[0];
+      selEnd.value = sortedMonths.includes(oldEnd) ? oldEnd : sortedMonths[sortedMonths.length - 1];
+    }
   } else if (summaryPeriod === 'yearly') {
-    box.style.display = 'block';
-    [...years].sort().reverse().forEach(y => {
-      const o = document.createElement('option');
-      o.value = y;
-      o.textContent = `${y}`;
-      sel.appendChild(o);
+    box.style.display = 'flex';
+    const sortedYears = [...years].sort();
+    sortedYears.forEach(y => {
+      const o1 = document.createElement('option');
+      o1.value = y;
+      o1.textContent = `${y}`;
+      selStart.appendChild(o1);
+
+      const o2 = document.createElement('option');
+      o2.value = y;
+      o2.textContent = `${y}`;
+      selEnd.appendChild(o2);
     });
+    if (sortedYears.length > 0) {
+      selStart.value = sortedYears.includes(oldStart) ? oldStart : sortedYears[0];
+      selEnd.value = sortedYears.includes(oldEnd) ? oldEnd : sortedYears[sortedYears.length - 1];
+    }
   } else {
     box.style.display = 'none';
   }
@@ -1307,9 +1336,25 @@ function buildPeriodOptions() {
 
 function getFilteredTrades() {
   if (summaryPeriod === 'lifetime') return trades;
-  const val = document.getElementById('summaryPeriodValue').value;
-  if (!val) return trades;
-  return trades.filter(t => t.date.startsWith(val));
+  const startVal = document.getElementById('summaryPeriodStart').value;
+  const endVal = document.getElementById('summaryPeriodEnd').value;
+  if (!startVal || !endVal) return trades;
+
+  const minVal = startVal <= endVal ? startVal : endVal;
+  const maxVal = startVal <= endVal ? endVal : startVal;
+
+  if (summaryPeriod === 'monthly') {
+    return trades.filter(t => {
+      const m = t.date.substring(0, 7);
+      return m >= minVal && m <= maxVal;
+    });
+  } else if (summaryPeriod === 'yearly') {
+    return trades.filter(t => {
+      const y = t.date.substring(0, 4);
+      return y >= minVal && y <= maxVal;
+    });
+  }
+  return trades;
 }
 
 function renderSummary() {
@@ -1735,11 +1780,13 @@ function renderPerformance(data) {
     let displayName = k;
     if (perfSubView === 'period') {
       if (summaryPeriod === 'yearly') {
-        displayName = parseInt(k.substring(5), 10) + '月';
+        const p = k.split('-');
+        displayName = `${p[0]}年${parseInt(p[1], 10)}月`;
       } else if (summaryPeriod === 'lifetime') {
         displayName = k + '年';
       } else {
-        displayName = parseInt(k.substring(8), 10) + '日';
+        const p = k.split('-');
+        displayName = `${parseInt(p[1], 10)}/${parseInt(p[2], 10)}`;
       }
     }
     const wr = st.count > 0 ? Math.round((st.wins / st.count) * 100) : 0;
@@ -1974,7 +2021,8 @@ function setupEvents() {
       renderSummary();
     });
   });
-  document.getElementById('summaryPeriodValue').addEventListener('change', renderSummary);
+  document.getElementById('summaryPeriodStart').addEventListener('change', renderSummary);
+  document.getElementById('summaryPeriodEnd').addEventListener('change', renderSummary);
   document.querySelectorAll('#summaryViewTabs .summary-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#summaryViewTabs .summary-tab').forEach(b => b.classList.remove('active'));
