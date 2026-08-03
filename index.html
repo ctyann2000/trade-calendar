@@ -573,6 +573,24 @@ body {
   font-family: var(--font-mono);
   text-align: right;
 }
+.item-chip {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+}
+.item-chip:hover, .item-chip:active {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
 
 .summary-table {
   width: 100%;
@@ -803,18 +821,24 @@ body {
         </div>
         <div class="form-group">
           <label class="form-label">大項目</label>
-          <select class="form-select" id="tradeCategory">
-            <option value="デイトレ">デイトレ</option>
-            <option value="スキャル">スキャル</option>
-            <option value="スイング">スイング</option>
-            <option value="CFD">CFD</option>
-            <option value="株指数">株指数</option>
-            <option value="自動売買">自動売買</option>
-          </select>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <select class="form-select" id="tradeCategory" style="flex:1;">
+              <option value="デイトレ">デイトレ</option>
+              <option value="スキャル">スキャル</option>
+              <option value="スイング">スイング</option>
+              <option value="CFD">CFD</option>
+              <option value="株指数">株指数</option>
+              <option value="自動売買">自動売買</option>
+            </select>
+            <button type="button" class="btn btn-secondary" id="addCategoryBtn" style="padding:6px 10px; font-size:0.75rem; white-space:nowrap;">+ 追加</button>
+            <button type="button" class="btn btn-secondary" id="deleteCategoryBtn" style="padding:6px 10px; font-size:0.75rem; color:var(--loss); white-space:nowrap;">削除</button>
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">小項目（銘柄・ペア等）</label>
-          <input type="text" class="form-input" id="tradeItem" placeholder="ドル円、ゴールド、日経225など...">
+          <input type="text" class="form-input" id="tradeItem" list="tradeItemList" placeholder="ドル円、ゴールド、日経225など..." autocomplete="off">
+          <datalist id="tradeItemList"></datalist>
+          <div id="itemSuggestions" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;"></div>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -1013,9 +1037,13 @@ const EN_TO_JA = {
 
 let trades = [];
 let currentYear, currentMonth, selectedDate;
+const CATEGORY_STORAGE_KEY = 'trade_categories_list';
+let customCategories = ['デイトレ', 'スキャル', 'スイング', 'CFD', '株指数', '自動売買'];
 
 function init() {
   loadData();
+  loadCategories();
+  syncCategoriesFromTrades();
   const today = new Date();
   currentYear = today.getFullYear();
   currentMonth = today.getMonth();
@@ -1332,6 +1360,135 @@ function setSum(id, val) {
 }
 
 /* ============================================================
+   CATEGORY & ITEM SUGGESTIONS MANAGEMENT
+   ============================================================ */
+function loadCategories() {
+  const stored = localStorage.getItem(CATEGORY_STORAGE_KEY);
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        customCategories = parsed;
+      }
+    } catch(e) {}
+  }
+}
+
+function saveCategories() {
+  localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(customCategories));
+}
+
+function syncCategoriesFromTrades() {
+  let changed = false;
+  trades.forEach(t => {
+    const c = (t.category || '').trim();
+    if (c && !customCategories.includes(c)) {
+      customCategories.push(c);
+      changed = true;
+    }
+  });
+  if (changed) saveCategories();
+}
+
+function renderCategorySelect(selectedVal) {
+  const sel = document.getElementById('tradeCategory');
+  if (!sel) return;
+  sel.innerHTML = '';
+  const list = [...customCategories];
+  if (selectedVal && !list.includes(selectedVal)) {
+    list.push(selectedVal);
+  }
+  list.forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = cat;
+    if (cat === selectedVal) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function addCustomCategory() {
+  const name = prompt('追加する大項目の名前を入力してください:', '');
+  if (!name || !name.trim()) return;
+  const trimmed = name.trim();
+  if (!customCategories.includes(trimmed)) {
+    customCategories.push(trimmed);
+    saveCategories();
+  }
+  renderCategorySelect(trimmed);
+  updateItemSuggestions();
+  showToast('大項目「' + trimmed + '」を追加しました');
+}
+
+function deleteCustomCategory() {
+  const sel = document.getElementById('tradeCategory');
+  if (!sel || !sel.value) return;
+  const val = sel.value;
+  if (customCategories.length <= 1) {
+    showToast('大項目は1つ以上必要なため削除できません', true);
+    return;
+  }
+  if (!confirm('大項目「' + val + '」を選択肢から削除しますか？\n（※過去の取引履歴は削除されません）')) return;
+  customCategories = customCategories.filter(c => c !== val);
+  saveCategories();
+  renderCategorySelect(customCategories[0]);
+  updateItemSuggestions();
+  showToast('大項目「' + val + '」を削除しました');
+}
+
+function updateItemSuggestions() {
+  const selCategory = document.getElementById('tradeCategory').value;
+  const datalist = document.getElementById('tradeItemList');
+  const chipContainer = document.getElementById('itemSuggestions');
+  if (!datalist || !chipContainer) return;
+
+  // 全取引から小項目(item)を集計
+  const itemCounts = {};
+  trades.forEach(t => {
+    const it = (t.item || '').trim();
+    if (!it) return;
+    if (!itemCounts[it]) itemCounts[it] = { matchCount: 0, totalCount: 0 };
+    itemCounts[it].totalCount++;
+    if (t.category === selCategory) {
+      itemCounts[it].matchCount++;
+    }
+  });
+
+  const uniqueItems = Object.keys(itemCounts);
+  // 大項目が一致する頻度 > 全体の使用頻度 > アルファベット順 でソート
+  uniqueItems.sort((a, b) => {
+    const ca = itemCounts[a];
+    const cb = itemCounts[b];
+    if (cb.matchCount !== ca.matchCount) return cb.matchCount - ca.matchCount;
+    if (cb.totalCount !== ca.totalCount) return cb.totalCount - ca.totalCount;
+    return a.localeCompare(b, 'ja');
+  });
+
+  // datalistを構築
+  datalist.innerHTML = '';
+  uniqueItems.forEach(it => {
+    const opt = document.createElement('option');
+    opt.value = it;
+    datalist.appendChild(opt);
+  });
+
+  // クイック選択チップボタンを構築（最大12件まで表示）
+  chipContainer.innerHTML = '';
+  uniqueItems.slice(0, 12).forEach(it => {
+    const chip = document.createElement('span');
+    chip.className = 'item-chip';
+    chip.textContent = it;
+    if (itemCounts[it].matchCount > 0) {
+      chip.style.borderColor = 'var(--accent)';
+    }
+    chip.addEventListener('click', () => {
+      document.getElementById('tradeItem').value = it;
+    });
+    chipContainer.appendChild(chip);
+  });
+}
+
+/* ============================================================
    TRADE INPUT MODAL
    ============================================================ */
 let editingTradeId = null;
@@ -1339,8 +1496,9 @@ let editingTradeId = null;
 function openAddTrade() {
   editingTradeId = null;
   document.getElementById('tradeModalTitle').textContent = '取引を追加';
-  document.getElementById('tradeDate').value = selectedDate;
-  document.getElementById('tradeCategory').value = 'デイトレ';
+  document.getElementById('tradeDate').value = selectedDate || formatDate(new Date());
+  renderCategorySelect(customCategories[0]);
+  updateItemSuggestions();
   document.getElementById('tradeItem').value = '';
   document.getElementById('tradeProfit').value = '';
   document.getElementById('tradeLoss').value = '';
@@ -1355,7 +1513,8 @@ function openEditTrade(id) {
   editingTradeId = id;
   document.getElementById('tradeModalTitle').textContent = '取引を編集';
   document.getElementById('tradeDate').value = t.date;
-  document.getElementById('tradeCategory').value = t.category;
+  renderCategorySelect(t.category);
+  updateItemSuggestions();
   document.getElementById('tradeItem').value = t.item || '';
   document.getElementById('tradeProfit').value = t.profit || '';
   document.getElementById('tradeLoss').value = t.loss || '';
@@ -2027,6 +2186,7 @@ function handleFileImport(e) {
             category: EN_TO_JA[t.category] || t.category
           }));
           saveData();
+          syncCategoriesFromTrades();
           renderCalendar();
           renderDetail();
           renderBottomSummary();
@@ -2069,6 +2229,7 @@ function handleFileImport(e) {
         }
         trades = trades.concat(newTrades);
         saveData();
+        syncCategoriesFromTrades();
         renderCalendar();
         renderDetail();
         renderBottomSummary();
@@ -2212,6 +2373,9 @@ function setupEvents() {
   document.getElementById('closeTradeModal').addEventListener('click', () => closeModal('tradeModal'));
   document.getElementById('saveTrade').addEventListener('click', saveTrade);
   document.getElementById('deleteTrade').addEventListener('click', deleteTrade);
+  document.getElementById('addCategoryBtn').addEventListener('click', addCustomCategory);
+  document.getElementById('deleteCategoryBtn').addEventListener('click', deleteCustomCategory);
+  document.getElementById('tradeCategory').addEventListener('change', updateItemSuggestions);
 
   // Summary modal
   document.getElementById('closeSummaryModal').addEventListener('click', () => closeModal('summaryModal'));
