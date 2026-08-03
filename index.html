@@ -1378,6 +1378,9 @@ function renderDonut(data) {
       maintainAspectRatio: false,
       cutout: '58%',
       rotation: 0,
+      layout: {
+        padding: { left: 92, right: 92, top: 22, bottom: 22 }
+      },
       plugins: {
         legend: {
           display: false
@@ -1397,25 +1400,107 @@ function renderDonut(data) {
         id: 'sliceLabels',
         afterDraw(chart) {
           const { ctx } = chart;
+          const rightItems = [];
+          const leftItems = [];
+
           chart.data.datasets.forEach((dataset, i) => {
             const meta = chart.getDatasetMeta(i);
             meta.data.forEach((element, index) => {
               const val = dataset.data[index];
               if (val === 0) return;
-              const { x, y } = element.tooltipPosition();
-              ctx.save();
-              ctx.fillStyle = '#ffffff';
-              ctx.font = 'bold 13px ' + getComputedStyle(document.body).fontFamily;
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-              ctx.shadowBlur = 4;
+              const angle = (element.startAngle + element.endAngle) / 2;
+              const cos = Math.cos(angle);
+              const sin = Math.sin(angle);
+              const r = element.outerRadius;
+              const xEdge = element.x + cos * r;
+              const yEdge = element.y + sin * r;
+              const xBreak = element.x + cos * (r + 10);
+              const yBreak = element.y + sin * (r + 10);
+              const isRight = cos >= 0;
+              const xEnd = isRight ? element.x + r + 18 : element.x - r - 18;
               const name = chart.data.labels[index];
-              ctx.fillText(name, x, y - 8);
-              ctx.font = '800 14px ' + getComputedStyle(document.body).fontFamily;
-              ctx.fillText(formatYen(catMap[name]), x, y + 8);
-              ctx.restore();
+              const amt = formatYen(catMap[name]);
+              const color = dataset.backgroundColor[index];
+
+              const item = {
+                index,
+                name,
+                amt,
+                color,
+                xEdge,
+                yEdge,
+                xBreak,
+                yBreak,
+                y: yBreak,
+                xEnd,
+                isRight
+              };
+              if (isRight) rightItems.push(item);
+              else leftItems.push(item);
             });
+          });
+
+          const adjustPositions = (items) => {
+            items.sort((a, b) => a.y - b.y);
+            const minGap = 28;
+            for (let idx = 1; idx < items.length; idx++) {
+              if (items[idx].y < items[idx - 1].y + minGap) {
+                items[idx].y = items[idx - 1].y + minGap;
+              }
+            }
+            if (items.length > 0) {
+              const maxAllowedY = chart.height - 18;
+              const overflowBottom = items[items.length - 1].y - maxAllowedY;
+              if (overflowBottom > 0) {
+                for (let idx = 0; idx < items.length; idx++) {
+                  items[idx].y -= overflowBottom;
+                }
+              }
+              const minAllowedY = 18;
+              if (items[0].y < minAllowedY) {
+                const underflowTop = minAllowedY - items[0].y;
+                for (let idx = 0; idx < items.length; idx++) {
+                  items[idx].y += underflowTop;
+                }
+              }
+            }
+          };
+
+          adjustPositions(rightItems);
+          adjustPositions(leftItems);
+
+          [...rightItems, ...leftItems].forEach(item => {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(item.xEdge, item.yEdge, 2.5, 0, Math.PI * 2);
+            ctx.fillStyle = item.color || '#fff';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(item.xEdge, item.yEdge);
+            ctx.lineTo(item.xBreak, item.yBreak);
+            ctx.lineTo(item.xEnd, item.y);
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 1.3;
+            ctx.stroke();
+
+            ctx.font = 'bold 11px ' + getComputedStyle(document.body).fontFamily;
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#e2e8f0';
+            if (item.isRight) {
+              ctx.textAlign = 'left';
+              ctx.fillText(item.name, item.xEnd + 5, item.y - 7);
+              ctx.font = '800 12px ' + getComputedStyle(document.body).fontFamily;
+              ctx.fillStyle = item.color || '#38bdf8';
+              ctx.fillText(item.amt, item.xEnd + 5, item.y + 7);
+            } else {
+              ctx.textAlign = 'right';
+              ctx.fillText(item.name, item.xEnd - 5, item.y - 7);
+              ctx.font = '800 12px ' + getComputedStyle(document.body).fontFamily;
+              ctx.fillStyle = item.color || '#f43f5e';
+              ctx.fillText(item.amt, item.xEnd - 5, item.y + 7);
+            }
+            ctx.restore();
           });
         }
       },
