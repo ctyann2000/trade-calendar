@@ -897,6 +897,56 @@ body {
             <p>保存したJSONバックアップファイルから復元</p>
           </div>
         </div>
+        <div style="margin-top: 14px; padding: 12px; background: var(--bg-card-hover); border: 1px solid var(--border); border-radius: 8px; font-size: 0.78rem; line-height: 1.6;">
+          <div style="font-weight: 700; color: var(--accent); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            Excel / CSV インポートのフォーマット説明
+          </div>
+          <div style="color: var(--text-secondary); margin-bottom: 8px; font-size: 0.74rem;">
+            1行目は見出し（日付, 大項目...）とし、2行目から以下の列順でデータを作成してください：
+          </div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border); color: var(--text-muted);">
+                <th style="text-align: left; padding: 4px 2px;">列</th>
+                <th style="text-align: left; padding: 4px 2px;">項目</th>
+                <th style="text-align: left; padding: 4px 2px;">入力例 / 説明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 4px 2px; font-weight: 700; color: var(--accent);">A列</td>
+                <td style="padding: 4px 2px; font-weight: 700;">日付</td>
+                <td style="padding: 4px 2px; color: var(--text-secondary);">2026/07/28 または 2026-07-28</td>
+              </tr>
+              <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 4px 2px; font-weight: 700; color: var(--accent);">B列</td>
+                <td style="padding: 4px 2px; font-weight: 700;">大項目</td>
+                <td style="padding: 4px 2px; color: var(--text-secondary);">自動売買 / スイング / スキャル 等</td>
+              </tr>
+              <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 4px 2px; font-weight: 700; color: var(--accent);">C列</td>
+                <td style="padding: 4px 2px; font-weight: 700;">利益金額</td>
+                <td style="padding: 4px 2px; color: var(--text-secondary);">1500 (半角数字・利益なしは 0)</td>
+              </tr>
+              <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 4px 2px; font-weight: 700; color: var(--accent);">D列</td>
+                <td style="padding: 4px 2px; font-weight: 700;">損失金額</td>
+                <td style="padding: 4px 2px; color: var(--text-secondary);">500 (半角数字・損失なしは 0)</td>
+              </tr>
+              <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 4px 2px; font-weight: 700; color: var(--accent);">E列</td>
+                <td style="padding: 4px 2px; font-weight: 700;">損益金額</td>
+                <td style="padding: 4px 2px; color: var(--text-secondary);">自動計算されるため空欄でも可</td>
+              </tr>
+              <tr>
+                <td style="padding: 4px 2px; font-weight: 700; color: var(--accent);">F列</td>
+                <td style="padding: 4px 2px; font-weight: 700;">メモ</td>
+                <td style="padding: 4px 2px; color: var(--text-secondary);">任意のメモ・取引備考</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         <input type="file" id="fileInput" style="display:none">
       </div>
     </div>
@@ -2000,7 +2050,7 @@ function handleFileImport(e) {
             item: String(row[1] || ''),
             profit: parseInt(row[2]) || 0,
             loss: parseInt(row[3]) || 0,
-            memo: String(row[5] || '')
+            memo: String(row[5] || (isNaN(row[4]) ? row[4] : '') || '')
           });
         }
         trades = trades.concat(newTrades);
