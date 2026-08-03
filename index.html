@@ -152,6 +152,13 @@ body {
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
 }
+@keyframes calFadeIn {
+  from { opacity: 0.35; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.cal-grid.animate {
+  animation: calFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
 .cal-cell {
   border-radius: var(--radius-sm);
   display: flex;
@@ -710,7 +717,7 @@ body {
     </header>
 
     <!-- CALENDAR SECTION -->
-    <section class="cal-section">
+    <section class="cal-section" id="calSection">
       <div class="cal-header">
         <div class="cal-month" id="calMonth"></div>
         <div class="cal-nav">
@@ -1133,6 +1140,9 @@ function renderCalendar() {
     const cell = createCalCell(i, true);
     grid.appendChild(cell);
   }
+  grid.classList.remove('animate');
+  void grid.offsetWidth;
+  grid.classList.add('animate');
 }
 
 function createCalCell(day, isOther, dateStr, dayPnl, count, isToday, isSelected) {
@@ -2161,6 +2171,41 @@ function setupEvents() {
     renderDetail();
     renderBottomSummary();
   });
+
+  // Calendar touch swipe navigation (左右スワイプによる月切り替え)
+  const calSec = document.getElementById('calSection');
+  let touchStartX = 0, touchStartY = 0;
+  if (calSec) {
+    calSec.addEventListener('touchstart', e => {
+      if (e.changedTouches && e.changedTouches[0]) {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+      }
+    }, { passive: true });
+
+    calSec.addEventListener('touchend', e => {
+      if (e.changedTouches && e.changedTouches[0]) {
+        const touchEndX = e.changedTouches[0].screenX;
+        const touchEndY = e.changedTouches[0].screenY;
+        const diffX = touchEndX - touchStartX;
+        const diffY = touchEndY - touchStartY;
+        // 45px以上の横移動、かつ縦スクロールと区別するため横移動が縦移動の1.5倍以上のときのみ反応
+        if (Math.abs(diffX) > 45 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
+          if (diffX < 0) {
+            currentMonth++;
+            if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+          } else {
+            currentMonth--;
+            if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+          }
+          selectedDate = null;
+          renderCalendar();
+          renderDetail();
+          renderBottomSummary();
+        }
+      }
+    }, { passive: true });
+  }
 
   // Trade modal
   document.getElementById('addTradeBtn').addEventListener('click', openAddTrade);
