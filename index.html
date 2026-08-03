@@ -798,11 +798,6 @@ body {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
         データエクスポート
       </div>
-      <div class="menu-divider"></div>
-      <div class="menu-item" id="menuBackup">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        Googleドライブにバックアップ
-      </div>
     </div>
   </nav>
 
@@ -2288,7 +2283,6 @@ function setupEvents() {
   document.getElementById('menuSummary').addEventListener('click', openSummary);
   document.getElementById('menuImport').addEventListener('click', openImport);
   document.getElementById('menuExport').addEventListener('click', openExport);
-  document.getElementById('menuBackup').addEventListener('click', () => { closeMenu(); triggerBackup(); });
 
   // Calendar nav
   document.getElementById('prevMonth').addEventListener('click', () => {
