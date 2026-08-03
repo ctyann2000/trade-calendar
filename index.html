@@ -205,7 +205,7 @@ body {
   flex-direction: column;
   gap: 8px;
   overflow-y: auto;
-  padding-bottom: 160px;
+  padding-bottom: 76px;
 }
 .detail-header {
   display: flex;
@@ -1153,14 +1153,14 @@ function renderDetail() {
     const totalWins = monthTrades.filter(t => pnl(t) > 0).length;
     const totalWinRate = totalCount > 0 ? Math.round((totalWins / totalCount) * 100) : 0;
 
-    let html = '<div style="max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; margin-top: 4px;">' +
+    let html = '<div style="max-height: 420px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; margin-top: 6px;">' +
       '<table class="summary-table" style="margin-top:0;">' +
         '<thead>' +
           '<tr>' +
-            '<th>大項目</th>' +
-            '<th class="text-right">取引回数</th>' +
-            '<th class="text-right">勝率</th>' +
-            '<th class="text-right">損益金額</th>' +
+            '<th style="padding:12px;">大項目</th>' +
+            '<th class="text-right" style="padding:12px;">取引回数</th>' +
+            '<th class="text-right" style="padding:12px;">勝率</th>' +
+            '<th class="text-right" style="padding:12px;">損益金額</th>' +
           '</tr>' +
         '</thead>' +
         '<tbody>';
@@ -1170,20 +1170,20 @@ function renderDetail() {
       const wr = st.count > 0 ? Math.round((st.wins / st.count) * 100) : 0;
       const cls = st.pnl >= 0 ? 'positive' : 'negative';
       html += '<tr>' +
-        `<td><strong>${escHtml(c)}</strong></td>` +
-        `<td class="text-right">${st.count}回</td>` +
-        `<td class="text-right">${wr}%</td>` +
-        `<td class="text-right ${cls}"><strong>${formatYen(st.pnl)}</strong></td>` +
+        `<td style="padding:13px 12px;"><strong>${escHtml(c)}</strong></td>` +
+        `<td class="text-right" style="padding:13px 12px;">${st.count}回</td>` +
+        `<td class="text-right" style="padding:13px 12px;">${wr}%</td>` +
+        `<td class="text-right ${cls}" style="padding:13px 12px;"><strong>${formatYen(st.pnl)}</strong></td>` +
       '</tr>';
     });
 
     html += '</tbody>' +
       '<tfoot>' +
         '<tr>' +
-          '<th>合計</th>' +
-          `<th class="text-right">${totalCount}回</th>` +
-          `<th class="text-right">${totalWinRate}%</th>` +
-          `<th class="text-right ${total >= 0 ? 'positive' : 'negative'}"><strong>${formatYen(total)}</strong></th>` +
+          '<th style="padding:13px 12px;">合計</th>' +
+          `<th class="text-right" style="padding:13px 12px;">${totalCount}回</th>` +
+          `<th class="text-right" style="padding:13px 12px;">${totalWinRate}%</th>` +
+          `<th class="text-right ${total >= 0 ? 'positive' : 'negative'}" style="padding:13px 12px;"><strong>${formatYen(total)}</strong></th>` +
         '</tr>' +
       '</tfoot>' +
     '</table></div>';
