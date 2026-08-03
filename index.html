@@ -962,7 +962,7 @@ function init() {
   const today = new Date();
   currentYear = today.getFullYear();
   currentMonth = today.getMonth();
-  selectedDate = formatDate(today);
+  selectedDate = null;
   renderCalendar();
   renderDetail();
   renderBottomSummary();
@@ -1104,7 +1104,11 @@ function createCalCell(day, isOther, dateStr, dayPnl, count, isToday, isSelected
 
   if (!isOther && dateStr) {
     cell.addEventListener('click', () => {
-      selectedDate = dateStr;
+      if (selectedDate === dateStr) {
+        selectedDate = null;
+      } else {
+        selectedDate = dateStr;
+      }
       renderCalendar();
       renderDetail();
     });
@@ -1116,16 +1120,98 @@ function createCalCell(day, isOther, dateStr, dayPnl, count, isToday, isSelected
    DAY DETAIL RENDERING
    ============================================================ */
 function renderDetail() {
+  const totalEl = document.getElementById('detailTotal');
+  const list = document.getElementById('tradeList');
+  const addBtn = document.getElementById('addTradeBtn');
+
+  if (!selectedDate) {
+    if (addBtn) addBtn.style.display = 'none';
+    const prefix = currentYear + '-' + String(currentMonth + 1).padStart(2, '0');
+    const monthTrades = trades.filter(t => t.date.startsWith(prefix));
+    const total = monthTrades.reduce((s, t) => s + pnl(t), 0);
+
+    document.getElementById('detailDate').textContent = `${currentYear}年${currentMonth + 1}月 大項目サマリー`;
+    totalEl.textContent = formatYen(total);
+    totalEl.className = 'detail-total ' + (total >= 0 ? 'positive' : 'negative');
+
+    if (monthTrades.length === 0) {
+      list.innerHTML = `<div class="empty-state">${currentYear}年${currentMonth + 1}月の取引記録はありません</div>`;
+      return;
+    }
+
+    const catMap = {};
+    monthTrades.forEach(t => {
+      const c = t.category || '未分類';
+      if (!catMap[c]) catMap[c] = { count: 0, wins: 0, pnl: 0 };
+      catMap[c].count++;
+      if (pnl(t) > 0) catMap[c].wins++;
+      catMap[c].pnl += pnl(t);
+    });
+
+    const sortedCats = Object.keys(catMap).sort((a, b) => catMap[b].pnl - catMap[a].pnl);
+    const totalCount = monthTrades.length;
+    const totalWins = monthTrades.filter(t => pnl(t) > 0).length;
+    const totalWinRate = totalCount > 0 ? Math.round((totalWins / totalCount) * 100) : 0;
+
+    let html = '<div style="max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; margin-top: 4px;">' +
+      '<table class="summary-table" style="margin-top:0;">' +
+        '<thead>' +
+          '<tr>' +
+            '<th>大項目</th>' +
+            '<th class="text-right">取引回数</th>' +
+            '<th class="text-right">勝率</th>' +
+            '<th class="text-right">損益金額</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tbody>';
+
+    sortedCats.forEach(c => {
+      const st = catMap[c];
+      const wr = st.count > 0 ? Math.round((st.wins / st.count) * 100) : 0;
+      const cls = st.pnl >= 0 ? 'positive' : 'negative';
+      html += '<tr>' +
+        `<td><strong>${escHtml(c)}</strong></td>` +
+        `<td class="text-right">${st.count}回</td>` +
+        `<td class="text-right">${wr}%</td>` +
+        `<td class="text-right ${cls}"><strong>${formatYen(st.pnl)}</strong></td>` +
+      '</tr>';
+    });
+
+    html += '</tbody>' +
+      '<tfoot>' +
+        '<tr>' +
+          '<th>合計</th>' +
+          `<th class="text-right">${totalCount}回</th>` +
+          `<th class="text-right">${totalWinRate}%</th>` +
+          `<th class="text-right ${total >= 0 ? 'positive' : 'negative'}"><strong>${formatYen(total)}</strong></th>` +
+        '</tr>' +
+      '</tfoot>' +
+    '</table></div>';
+
+    list.innerHTML = html;
+    return;
+  }
+
+  if (addBtn) addBtn.style.display = 'flex';
   const dayTrades = getDayTrades(selectedDate);
   const total = dayTrades.reduce((s, t) => s + pnl(t), 0);
 
   const parts = selectedDate.split('-');
-  document.getElementById('detailDate').textContent = parts[0] + '年' + Number(parts[1]) + '月' + Number(parts[2]) + '日';
-  const totalEl = document.getElementById('detailTotal');
+  document.getElementById('detailDate').innerHTML = `${parts[0]}年${Number(parts[1])}月${Number(parts[2])}日 <button class="icon-btn" id="clearDateBtn" style="font-size:0.75rem; padding:2px 8px; margin-left:10px; border:1px solid var(--border); border-radius:4px; vertical-align:middle; background:var(--bg-card); cursor:pointer;">× 解除</button>`;
+
+  const clearBtn = document.getElementById('clearDateBtn');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectedDate = null;
+      renderCalendar();
+      renderDetail();
+    });
+  }
+
   totalEl.textContent = formatYen(total);
   totalEl.className = 'detail-total ' + (total >= 0 ? 'positive' : 'negative');
 
-  const list = document.getElementById('tradeList');
   if (dayTrades.length === 0) {
     list.innerHTML = '<div class="empty-state">この日の取引記録はありません</div>';
     return;
@@ -1999,18 +2085,22 @@ function setupEvents() {
   document.getElementById('prevMonth').addEventListener('click', () => {
     currentMonth--;
     if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    selectedDate = null;
     renderCalendar();
+    renderDetail();
   });
   document.getElementById('nextMonth').addEventListener('click', () => {
     currentMonth++;
     if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    selectedDate = null;
     renderCalendar();
+    renderDetail();
   });
   document.getElementById('todayBtn').addEventListener('click', () => {
     const today = new Date();
     currentYear = today.getFullYear();
     currentMonth = today.getMonth();
-    selectedDate = formatDate(today);
+    selectedDate = null;
     renderCalendar();
     renderDetail();
   });
