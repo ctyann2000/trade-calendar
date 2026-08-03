@@ -1283,12 +1283,18 @@ function buildPeriodOptions() {
   selStart.innerHTML = '';
   selEnd.innerHTML = '';
 
+  const now = new Date();
+  const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const currentYear = String(now.getFullYear());
+
   const months = new Set();
   const years = new Set();
   trades.forEach(t => {
     months.add(t.date.substring(0, 7));
     years.add(t.date.substring(0, 4));
   });
+  months.add(currentYM);
+  years.add(currentYear);
 
   if (summaryPeriod === 'monthly') {
     box.style.display = 'flex';
@@ -1308,8 +1314,9 @@ function buildPeriodOptions() {
       selEnd.appendChild(o2);
     });
     if (sortedMonths.length > 0) {
-      selStart.value = sortedMonths.includes(oldStart) ? oldStart : sortedMonths[0];
-      selEnd.value = sortedMonths.includes(oldEnd) ? oldEnd : sortedMonths[sortedMonths.length - 1];
+      const defM = sortedMonths.includes(currentYM) ? currentYM : sortedMonths[sortedMonths.length - 1];
+      selStart.value = sortedMonths.includes(oldStart) ? oldStart : defM;
+      selEnd.value = sortedMonths.includes(oldEnd) ? oldEnd : defM;
     }
   } else if (summaryPeriod === 'yearly') {
     box.style.display = 'flex';
@@ -1326,8 +1333,9 @@ function buildPeriodOptions() {
       selEnd.appendChild(o2);
     });
     if (sortedYears.length > 0) {
-      selStart.value = sortedYears.includes(oldStart) ? oldStart : sortedYears[0];
-      selEnd.value = sortedYears.includes(oldEnd) ? oldEnd : sortedYears[sortedYears.length - 1];
+      const defY = sortedYears.includes(currentYear) ? currentYear : sortedYears[sortedYears.length - 1];
+      selStart.value = sortedYears.includes(oldStart) ? oldStart : defY;
+      selEnd.value = sortedYears.includes(oldEnd) ? oldEnd : defY;
     }
   } else {
     box.style.display = 'none';
@@ -2017,6 +2025,8 @@ function setupEvents() {
       document.querySelectorAll('#summaryPeriodTabs .summary-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       summaryPeriod = btn.dataset.period;
+      document.getElementById('summaryPeriodStart').value = '';
+      document.getElementById('summaryPeriodEnd').value = '';
       buildPeriodOptions();
       renderSummary();
     });
