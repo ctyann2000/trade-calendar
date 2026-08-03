@@ -205,7 +205,7 @@ body {
   flex-direction: column;
   gap: 8px;
   overflow-y: auto;
-  padding-bottom: 76px;
+  padding-bottom: 86px;
 }
 .detail-header {
   display: flex;
@@ -294,19 +294,19 @@ body {
   transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
-  background: linear-gradient(to top, var(--bg-card) 85%, transparent);
+  background: var(--bg-card);
   border-top: 1px solid var(--border);
-  padding: 10px 12px 14px;
+  padding: 6px 10px 8px;
   z-index: 90;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 6px;
 }
 .summary-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 8px;
+  padding: 6px 4px;
   text-align: center;
 }
 .summary-label {
@@ -739,11 +739,11 @@ body {
     <!-- FIXED BOTTOM SUMMARY -->
     <div class="bottom-summary">
       <div class="summary-card">
-        <div class="summary-label">今月</div>
+        <div class="summary-label" id="labelMonthly">今月</div>
         <div class="summary-value" id="sumMonthly">--</div>
       </div>
       <div class="summary-card">
-        <div class="summary-label">今年</div>
+        <div class="summary-label" id="labelYearly">今年</div>
         <div class="summary-value" id="sumYearly">--</div>
       </div>
       <div class="summary-card">
@@ -1203,7 +1203,7 @@ function renderDetail() {
     const totalWins = monthTrades.filter(t => pnl(t) > 0).length;
     const totalWinRate = totalCount > 0 ? Math.round((totalWins / totalCount) * 100) : 0;
 
-    let html = '<div style="max-height: 420px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; margin-top: 6px;">' +
+    let html = '<div style="max-height: 330px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; margin-top: 6px;">' +
       '<table class="summary-table" style="margin-top:0;">' +
         '<thead>' +
           '<tr>' +
@@ -1294,9 +1294,13 @@ function escHtml(s) {
    BOTTOM SUMMARY
    ============================================================ */
 function renderBottomSummary() {
-  const now = new Date();
-  const thisMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
-  const thisYear = String(now.getFullYear());
+  const thisMonth = currentYear + '-' + String(currentMonth + 1).padStart(2, '0');
+  const thisYear = String(currentYear);
+
+  const lMon = document.getElementById('labelMonthly');
+  const lYear = document.getElementById('labelYearly');
+  if (lMon) lMon.textContent = `${currentMonth + 1}月`;
+  if (lYear) lYear.textContent = `${currentYear}年`;
 
   let monthly = 0, yearly = 0, lifetime = 0;
   trades.forEach(t => {
@@ -2138,6 +2142,7 @@ function setupEvents() {
     selectedDate = null;
     renderCalendar();
     renderDetail();
+    renderBottomSummary();
   });
   document.getElementById('nextMonth').addEventListener('click', () => {
     currentMonth++;
@@ -2145,6 +2150,7 @@ function setupEvents() {
     selectedDate = null;
     renderCalendar();
     renderDetail();
+    renderBottomSummary();
   });
   document.getElementById('todayBtn').addEventListener('click', () => {
     const today = new Date();
@@ -2153,6 +2159,7 @@ function setupEvents() {
     selectedDate = null;
     renderCalendar();
     renderDetail();
+    renderBottomSummary();
   });
 
   // Trade modal
