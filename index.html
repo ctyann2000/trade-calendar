@@ -561,6 +561,48 @@ body {
   text-align: right;
 }
 
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 0.85rem;
+}
+.summary-table th {
+  background: var(--bg-card-hover);
+  color: var(--text-secondary);
+  font-weight: 700;
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--border);
+}
+.summary-table th.text-right,
+.summary-table td.text-right {
+  text-align: right;
+}
+.summary-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+}
+.summary-table tbody tr:hover {
+  background: var(--bg-card-hover);
+}
+.summary-table tfoot th {
+  background: var(--bg-card);
+  border-top: 2px solid var(--border);
+  border-bottom: none;
+  font-weight: 700;
+  padding: 10px 12px;
+}
+.summary-table .color-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
 /* ============================================================
    EXPORT MODAL
    ============================================================ */
@@ -788,7 +830,7 @@ body {
         <span>収支サマリー分析</span>
         <button class="icon-btn" id="closeSummaryModal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
-      <div class="modal-body" style="display:flex; flex-direction:column;">
+      <div class="modal-body" style="display:flex; flex-direction:column; overflow-y:auto;">
         <div class="summary-tabs" id="summaryPeriodTabs" style="margin-bottom:10px;">
           <button class="summary-tab active" data-period="monthly">月</button>
           <button class="summary-tab" data-period="yearly">年</button>
@@ -802,10 +844,21 @@ body {
           <button class="summary-tab" data-view="bar">推移 (棒・折れ線)</button>
           <button class="summary-tab" data-view="performance">項目別成績</button>
         </div>
-        <div class="chart-container" id="chartContainer" style="flex:1; min-height:360px;">
-          <canvas id="summaryChart"></canvas>
+        <div id="chartSection" style="display:block;">
+          <div class="chart-container" id="chartContainer" style="min-height:350px; margin-bottom:14px;">
+            <canvas id="summaryChart"></canvas>
+          </div>
+          <div id="chartTableContainer" style="overflow-x:auto; margin-bottom:12px;"></div>
         </div>
-        <div id="perfList" style="flex:1; overflow-y:auto;"></div>
+        <div id="perfListContainer" style="display:none;">
+          <div class="summary-tabs" id="perfSubViewTabs" style="margin-bottom:12px;">
+            <button class="summary-tab active" data-subview="category">大項目</button>
+            <button class="summary-tab" data-subview="item">小項目</button>
+            <button class="summary-tab" data-subview="memo">メモ</button>
+            <button class="summary-tab" data-subview="period">期間別</button>
+          </div>
+          <div id="perfTableContainer" style="overflow-x:auto;"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1197,11 +1250,15 @@ function deleteTrade() {
 let summaryChart = null;
 let summaryPeriod = 'monthly';
 let summaryView = 'donut';
+let perfSubView = 'category';
 
 function openSummary() {
   closeMenu();
   document.querySelectorAll('#summaryPeriodTabs .summary-tab').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.period === summaryPeriod);
+  });
+  document.querySelectorAll('#perfSubViewTabs .summary-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.subview === perfSubView);
   });
   buildPeriodOptions();
   renderSummary();
@@ -1251,20 +1308,21 @@ function getFilteredTrades() {
 
 function renderSummary() {
   const filtered = getFilteredTrades();
-  const container = document.getElementById('chartContainer');
-  const perfDiv = document.getElementById('perfList');
+  const chartSec = document.getElementById('chartSection');
+  const perfSec = document.getElementById('perfListContainer');
 
   if (summaryView === 'donut') {
-    container.style.display = 'block';
-    perfDiv.innerHTML = '';
+    chartSec.style.display = 'block';
+    perfSec.style.display = 'none';
     renderDonut(filtered);
   } else if (summaryView === 'bar') {
-    container.style.display = 'block';
-    perfDiv.innerHTML = '';
+    chartSec.style.display = 'block';
+    perfSec.style.display = 'none';
     renderBarLine(filtered);
   } else {
-    container.style.display = 'none';
-    renderPerformance(filtered, perfDiv);
+    chartSec.style.display = 'none';
+    perfSec.style.display = 'block';
+    renderPerformance(filtered);
   }
 }
 
@@ -1284,12 +1342,16 @@ function renderDonut(data) {
   const profitColors = ['#0ea5e9', '#3b82f6', '#06b6d4', '#6366f1', '#38bdf8', '#2563eb'];
   const lossColors = ['#ef4444', '#f43f5e', '#dc2626', '#fb7185', '#e11d48', '#b91c1c'];
 
+  const colorMap = {};
   const colors = sortedLabels.map((k, idx) => {
+    let c = '';
     if (catMap[k] >= 0) {
-      return profitColors[profitCats.indexOf(k) % profitColors.length];
+      c = profitColors[profitCats.indexOf(k) % profitColors.length];
     } else {
-      return lossColors[lossCats.indexOf(k) % lossColors.length];
+      c = lossColors[lossCats.indexOf(k) % lossColors.length];
     }
+    colorMap[k] = c;
+    return c;
   });
 
   const total = data.reduce((s,t) => s + pnl(t), 0);
@@ -1312,21 +1374,7 @@ function renderDonut(data) {
       rotation: 0,
       plugins: {
         legend: {
-          position: 'bottom',
-          labels: {
-            color: '#f1f5f9',
-            font: { size: 13, weight: 'bold' },
-            padding: 14,
-            generateLabels: chart => {
-              const defaultLabels = Chart.overrides.doughnut.plugins.legend.labels.generateLabels(chart);
-              return defaultLabels.map((item, i) => {
-                const labelName = sortedLabels[i];
-                const amt = formatYen(catMap[labelName]);
-                item.text = `${labelName} : ${amt}`;
-                return item;
-              });
-            }
-          }
+          display: false
         },
         tooltip: {
           callbacks: {
@@ -1386,6 +1434,8 @@ function renderDonut(data) {
       }
     ]
   });
+
+  renderChartTable(data, colorMap);
 }
 
 function renderBarLine(data) {
@@ -1462,29 +1512,167 @@ function renderBarLine(data) {
       }
     }
   });
+
+  renderChartTable(data, null);
 }
 
-function renderPerformance(data, container) {
+function renderChartTable(data, colorMap) {
+  const cont = document.getElementById('chartTableContainer');
   const catMap = {};
+  let totalCount = 0;
+  let totalWins = 0;
+  let totalPnl = 0;
+
   data.forEach(t => {
-    if (!catMap[t.category]) catMap[t.category] = { pnl: 0, wins: 0, losses: 0, count: 0 };
+    const c = t.category || '未分類';
+    if (!catMap[c]) catMap[c] = { count: 0, wins: 0, pnl: 0 };
     const p = pnl(t);
-    catMap[t.category].pnl += p;
-    catMap[t.category].count++;
-    if (p > 0) catMap[t.category].wins++;
-    else if (p < 0) catMap[t.category].losses++;
+    catMap[c].count++;
+    if (p > 0) catMap[c].wins++;
+    catMap[c].pnl += p;
+    totalCount++;
+    if (p > 0) totalWins++;
+    totalPnl += p;
   });
 
-  const sorted = Object.entries(catMap).sort((a,b) => b[1].pnl - a[1].pnl);
-  container.innerHTML = sorted.map(([name, stats]) => {
-    const winRate = stats.count > 0 ? Math.round((stats.wins / stats.count) * 100) : 0;
-    const cls = stats.pnl >= 0 ? 'positive' : 'negative';
-    return '<div class="perf-card fade-in">' +
-      '<div class="perf-name">' + escHtml(name) + '</div>' +
-      '<div class="perf-stat">' + stats.count + '回取引 / 勝率 ' + winRate + '%</div>' +
-      '<div class="perf-pnl ' + cls + '">' + formatYen(stats.pnl) + '</div>' +
-    '</div>';
-  }).join('');
+  const sorted = Object.entries(catMap).sort((a, b) => b[1].pnl - a[1].pnl);
+  const totalWinRate = totalCount > 0 ? Math.round((totalWins / totalCount) * 100) : 0;
+
+  let html = '<table class="summary-table">' +
+    '<thead>' +
+      '<tr>' +
+        '<th>大項目</th>' +
+        '<th class="text-right">取引回数</th>' +
+        '<th class="text-right">勝率</th>' +
+        '<th class="text-right">損益金額</th>' +
+      '</tr>' +
+    '</thead>' +
+    '<tbody>';
+
+  sorted.forEach(([catName, st]) => {
+    const wr = st.count > 0 ? Math.round((st.wins / st.count) * 100) : 0;
+    const cls = st.pnl >= 0 ? 'positive' : 'negative';
+    const dot = colorMap && colorMap[catName] ? `<span class="color-dot" style="background-color:${colorMap[catName]};"></span>` : '';
+    html += `<tr>` +
+      `<td>${dot}<strong>${escHtml(catName)}</strong></td>` +
+      `<td class="text-right">${st.count}回</td>` +
+      `<td class="text-right">${wr}%</td>` +
+      `<td class="text-right ${cls}"><strong>${formatYen(st.pnl)}</strong></td>` +
+    `</tr>`;
+  });
+
+  html += '</tbody>' +
+    '<tfoot>' +
+      '<tr>' +
+        '<th>合計</th>' +
+        `<th class="text-right">${totalCount}回</th>` +
+        `<th class="text-right">${totalWinRate}%</th>` +
+        `<th class="text-right ${totalPnl >= 0 ? 'positive' : 'negative'}"><strong>${formatYen(totalPnl)}</strong></th>` +
+      '</tr>' +
+    '</tfoot>' +
+  '</table>';
+
+  cont.innerHTML = html;
+}
+
+function renderPerformance(data) {
+  const cont = document.getElementById('perfTableContainer');
+  const map = {};
+  let totalCount = 0;
+  let totalWins = 0;
+  let totalPnl = 0;
+
+  data.forEach(t => {
+    let key = '';
+    if (perfSubView === 'category') {
+      key = t.category || '未分類';
+    } else if (perfSubView === 'item') {
+      key = t.item || '(小項目なし)';
+    } else if (perfSubView === 'memo') {
+      key = t.memo || '(メモなし)';
+    } else if (perfSubView === 'period') {
+      if (summaryPeriod === 'yearly') {
+        key = t.date.substring(0, 7);
+      } else if (summaryPeriod === 'lifetime') {
+        key = t.date.substring(0, 4);
+      } else {
+        key = t.date;
+      }
+    }
+
+    if (!map[key]) map[key] = { count: 0, wins: 0, pnl: 0 };
+    const p = pnl(t);
+    map[key].count++;
+    if (p > 0) map[key].wins++;
+    map[key].pnl += p;
+
+    totalCount++;
+    if (p > 0) totalWins++;
+    totalPnl += p;
+  });
+
+  let sorted = Object.entries(map);
+  if (perfSubView === 'period') {
+    sorted.sort((a, b) => a[0].localeCompare(b[0]));
+  } else {
+    sorted.sort((a, b) => b[1].pnl - a[1].pnl);
+  }
+
+  const totalWinRate = totalCount > 0 ? Math.round((totalWins / totalCount) * 100) : 0;
+
+  let colName = '大項目';
+  if (perfSubView === 'item') colName = '小項目';
+  else if (perfSubView === 'memo') colName = 'メモ';
+  else if (perfSubView === 'period') {
+    if (summaryPeriod === 'yearly') colName = '月別';
+    else if (summaryPeriod === 'lifetime') colName = '年別';
+    else colName = '日別';
+  }
+
+  let html = '<table class="summary-table">' +
+    '<thead>' +
+      '<tr>' +
+        `<th>${colName}</th>` +
+        '<th class="text-right">取引回数</th>' +
+        '<th class="text-right">勝率</th>' +
+        '<th class="text-right">損益金額</th>' +
+      '</tr>' +
+    '</thead>' +
+    '<tbody>';
+
+  sorted.forEach(([k, st]) => {
+    let displayName = k;
+    if (perfSubView === 'period') {
+      if (summaryPeriod === 'yearly') {
+        displayName = parseInt(k.substring(5), 10) + '月';
+      } else if (summaryPeriod === 'lifetime') {
+        displayName = k + '年';
+      } else {
+        displayName = parseInt(k.substring(8), 10) + '日';
+      }
+    }
+    const wr = st.count > 0 ? Math.round((st.wins / st.count) * 100) : 0;
+    const cls = st.pnl >= 0 ? 'positive' : 'negative';
+    html += `<tr>` +
+      `<td><strong>${escHtml(displayName)}</strong></td>` +
+      `<td class="text-right">${st.count}回</td>` +
+      `<td class="text-right">${wr}%</td>` +
+      `<td class="text-right ${cls}"><strong>${formatYen(st.pnl)}</strong></td>` +
+    `</tr>`;
+  });
+
+  html += '</tbody>' +
+    '<tfoot>' +
+      '<tr>' +
+        '<th>合計</th>' +
+        `<th class="text-right">${totalCount}回</th>` +
+        `<th class="text-right">${totalWinRate}%</th>` +
+        `<th class="text-right ${totalPnl >= 0 ? 'positive' : 'negative'}"><strong>${formatYen(totalPnl)}</strong></th>` +
+      '</tr>' +
+    '</tfoot>' +
+  '</table>';
+
+  cont.innerHTML = html;
 }
 
 /* ============================================================
@@ -1701,6 +1889,14 @@ function setupEvents() {
       document.querySelectorAll('#summaryViewTabs .summary-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       summaryView = btn.dataset.view;
+      renderSummary();
+    });
+  });
+  document.querySelectorAll('#perfSubViewTabs .summary-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#perfSubViewTabs .summary-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      perfSubView = btn.dataset.subview;
       renderSummary();
     });
   });
