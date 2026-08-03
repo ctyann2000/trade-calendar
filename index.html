@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Trade Analytics Pro</title>
+  <title>トレード収支カレンダー</title>
   <meta name="description" content="FX・CFD・株指数のトレード収支をカレンダー形式で記録・分析するアプリ">
   <meta name="theme-color" content="#0b0f17">
-  <link rel="manifest" href="manifest.json">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="data.js"></script>
@@ -137,10 +136,10 @@ body {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   color: var(--text-muted);
   margin-bottom: 4px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.05em;
 }
 .cal-weekdays div:first-child { color: var(--loss); }
@@ -306,12 +305,11 @@ body {
   text-align: center;
 }
 .summary-label {
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   color: var(--text-muted);
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
 }
 .summary-value {
   font-size: 0.92rem;
@@ -541,11 +539,11 @@ body {
   align-items: center;
 }
 .perf-name {
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 .perf-stat {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
   text-align: right;
 }
@@ -647,8 +645,8 @@ body {
 
     <!-- HEADER -->
     <header class="header">
-      <div class="header-title"><span>Trade</span> Analytics</div>
-      <button class="icon-btn" id="menuBtn" aria-label="Menu">
+      <div class="header-title"><span>トレード</span> 収支カレンダー</div>
+      <button class="icon-btn" id="menuBtn" aria-label="メニュー">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
     </header>
@@ -659,11 +657,11 @@ body {
         <div class="cal-month" id="calMonth"></div>
         <div class="cal-nav">
           <button class="icon-btn" id="prevMonth"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
-          <button class="icon-btn" id="todayBtn" style="font-size:0.72rem;font-weight:700;padding:6px 10px">TODAY</button>
+          <button class="icon-btn" id="todayBtn" style="font-size:0.75rem;font-weight:700;padding:6px 12px">今日</button>
           <button class="icon-btn" id="nextMonth"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
         </div>
       </div>
-      <div class="cal-weekdays"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+      <div class="cal-weekdays"><div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div></div>
       <div class="cal-grid" id="calGrid"></div>
     </section>
 
@@ -676,22 +674,22 @@ body {
       <div id="tradeList"></div>
       <button class="add-btn" id="addTradeBtn">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Trade Result
+        + 取引を記録
       </button>
     </section>
 
     <!-- FIXED BOTTOM SUMMARY -->
     <div class="bottom-summary">
       <div class="summary-card">
-        <div class="summary-label">Monthly</div>
+        <div class="summary-label">今月</div>
         <div class="summary-value" id="sumMonthly">--</div>
       </div>
       <div class="summary-card">
-        <div class="summary-label">Yearly</div>
+        <div class="summary-label">今年</div>
         <div class="summary-value" id="sumYearly">--</div>
       </div>
       <div class="summary-card">
-        <div class="summary-label">Lifetime</div>
+        <div class="summary-label">全期間</div>
         <div class="summary-value" id="sumLifetime">--</div>
       </div>
     </div>
@@ -701,26 +699,26 @@ body {
   <div class="menu-overlay" id="menuOverlay"></div>
   <nav class="side-menu" id="sideMenu">
     <div class="menu-header">
-      Menu
+      メニュー
       <button class="icon-btn" id="closeMenuBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="menu-items">
       <div class="menu-item" id="menuSummary">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
-        Summary
+        サマリー分析
       </div>
       <div class="menu-item" id="menuImport">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-        Import
+        データインポート
       </div>
       <div class="menu-item" id="menuExport">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-        Export
+        データエクスポート
       </div>
       <div class="menu-divider"></div>
       <div class="menu-item" id="menuBackup">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        Backup to Drive
+        Googleドライブにバックアップ
       </div>
     </div>
   </nav>
@@ -730,46 +728,46 @@ body {
     <div class="modal">
       <div class="modal-handle"></div>
       <div class="modal-title">
-        <span id="tradeModalTitle">Add Trade</span>
+        <span id="tradeModalTitle">取引を追加</span>
         <button class="icon-btn" id="closeTradeModal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">Date</label>
+          <label class="form-label">日付</label>
           <input type="date" class="form-input" id="tradeDate">
         </div>
         <div class="form-group">
-          <label class="form-label">Category</label>
+          <label class="form-label">大項目</label>
           <select class="form-select" id="tradeCategory">
-            <option value="FX Day Trade">FX Day Trade</option>
-            <option value="FX Scalp">FX Scalp</option>
-            <option value="FX Swing">FX Swing</option>
+            <option value="デイトレ">デイトレ</option>
+            <option value="スキャル">スキャル</option>
+            <option value="スイング">スイング</option>
             <option value="CFD">CFD</option>
-            <option value="Stock Index">Stock Index</option>
-            <option value="Auto Trade">Auto Trade</option>
+            <option value="株指数">株指数</option>
+            <option value="自動売買">自動売買</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Item / Pair</label>
-          <input type="text" class="form-input" id="tradeItem" placeholder="USD/JPY, Gold, Nikkei225...">
+          <label class="form-label">小項目（銘柄・ペア等）</label>
+          <input type="text" class="form-input" id="tradeItem" placeholder="ドル円、ゴールド、日経225など...">
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Profit</label>
+            <label class="form-label">利益 (円)</label>
             <input type="number" class="form-input" id="tradeProfit" placeholder="0" min="0">
           </div>
           <div class="form-group">
-            <label class="form-label">Loss</label>
+            <label class="form-label">損失 (円)</label>
             <input type="number" class="form-input" id="tradeLoss" placeholder="0" min="0">
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Memo</label>
-          <input type="text" class="form-input" id="tradeMemo" placeholder="Note...">
+          <label class="form-label">メモ</label>
+          <input type="text" class="form-input" id="tradeMemo" placeholder="トレード内容や備考...">
         </div>
-        <button class="btn btn-primary" id="saveTrade">Save</button>
+        <button class="btn btn-primary" id="saveTrade">保存</button>
         <div class="btn-row" id="editBtns" style="display:none">
-          <button class="btn btn-danger" id="deleteTrade" style="flex:1">Delete</button>
+          <button class="btn btn-danger" id="deleteTrade" style="flex:1">削除</button>
         </div>
       </div>
     </div>
@@ -780,22 +778,22 @@ body {
     <div class="modal">
       <div class="modal-handle"></div>
       <div class="modal-title">
-        <span>Summary</span>
+        <span>収支サマリー分析</span>
         <button class="icon-btn" id="closeSummaryModal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
       <div class="modal-body">
         <div class="summary-tabs" id="summaryPeriodTabs">
-          <button class="summary-tab active" data-period="monthly">Monthly</button>
-          <button class="summary-tab" data-period="yearly">Yearly</button>
-          <button class="summary-tab" data-period="lifetime">Lifetime</button>
+          <button class="summary-tab active" data-period="monthly">月別</button>
+          <button class="summary-tab" data-period="yearly">年別</button>
+          <button class="summary-tab" data-period="lifetime">全期間</button>
         </div>
         <div class="form-group" id="summaryPeriodSelect" style="margin-bottom:12px">
           <select class="form-select" id="summaryPeriodValue"></select>
         </div>
         <div class="summary-tabs" id="summaryViewTabs">
-          <button class="summary-tab active" data-view="donut">Donut</button>
-          <button class="summary-tab" data-view="bar">Bar & Line</button>
-          <button class="summary-tab" data-view="performance">Performance</button>
+          <button class="summary-tab active" data-view="donut">割合 (円グラフ)</button>
+          <button class="summary-tab" data-view="bar">推移 (棒・折れ線)</button>
+          <button class="summary-tab" data-view="performance">項目別成績</button>
         </div>
         <div class="chart-container" id="chartContainer">
           <canvas id="summaryChart"></canvas>
@@ -810,22 +808,22 @@ body {
     <div class="modal">
       <div class="modal-handle"></div>
       <div class="modal-title">
-        <span>Import Data</span>
+        <span>データの読み込み</span>
         <button class="icon-btn" id="closeImportModal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
       <div class="modal-body">
         <div class="export-option" id="importXlsx">
           <div class="export-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
           <div class="export-text">
-            <h3>Excel (.xlsx)</h3>
-            <p>Import from Excel file</p>
+            <h3>Excel / CSVファイル</h3>
+            <p>Excel (.xlsx) や CSV ファイルから取引をインポート</p>
           </div>
         </div>
         <div class="export-option" id="importJson">
           <div class="export-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
           <div class="export-text">
-            <h3>JSON (Backup)</h3>
-            <p>Restore from backup file</p>
+            <h3>バックアップ (JSON)</h3>
+            <p>保存したJSONバックアップファイルから復元</p>
           </div>
         </div>
         <input type="file" id="fileInput" style="display:none">
@@ -838,28 +836,28 @@ body {
     <div class="modal">
       <div class="modal-handle"></div>
       <div class="modal-title">
-        <span>Export Data</span>
+        <span>データのエクスポート</span>
         <button class="icon-btn" id="closeExportModal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">Period</label>
+          <label class="form-label">対象期間</label>
           <select class="form-select" id="exportPeriod">
-            <option value="all">All Data</option>
+            <option value="all">すべての期間</option>
           </select>
         </div>
         <div class="export-option" id="exportCsv">
           <div class="export-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
           <div class="export-text">
-            <h3>CSV</h3>
-            <p>Download as CSV</p>
+            <h3>CSV 形式</h3>
+            <p>CSVファイルとしてダウンロード</p>
           </div>
         </div>
         <div class="export-option" id="exportJson">
           <div class="export-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
           <div class="export-text">
-            <h3>JSON</h3>
-            <p>Download as JSON</p>
+            <h3>JSON 形式</h3>
+            <p>JSONファイルとしてダウンロード</p>
           </div>
         </div>
       </div>
@@ -874,16 +872,16 @@ body {
    APP STATE & DATA MANAGEMENT
    ============================================================ */
 const STORAGE_KEY = 'trade_analytics_data';
-const CATEGORY_MAP = {
-  '\u30C7\u30A4\u30C8\u30EC': 'FX Day Trade',
-  '\u30B9\u30AD\u30E3\u30EB': 'FX Scalp',
-  '\u30B9\u30A4\u30F3\u30B0': 'FX Swing',
+
+// 過去バージョンからの英語表記マッピング（自動で日本語に統合変換）
+const EN_TO_JA = {
+  'FX Day Trade': 'デイトレ',
+  'FX Scalp': 'スキャル',
+  'FX Swing': 'スイング',
   'CFD': 'CFD',
-  '\u682A\u6307\u6570': 'Stock Index',
-  '\u81EA\u52D5\u58F2\u8CB7': 'Auto Trade'
+  'Stock Index': '株指数',
+  'Auto Trade': '自動売買'
 };
-const CATEGORY_MAP_REV = {};
-Object.entries(CATEGORY_MAP).forEach(([k,v]) => CATEGORY_MAP_REV[v] = k);
 
 let trades = [];
 let currentYear, currentMonth, selectedDate;
@@ -903,18 +901,27 @@ function init() {
 function loadData() {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored) {
-    try { trades = JSON.parse(stored); } catch(e) { trades = []; }
+    try {
+      const parsed = JSON.parse(stored);
+      trades = parsed.map(t => ({
+        ...t,
+        category: EN_TO_JA[t.category] || t.category
+      }));
+    } catch(e) { trades = []; }
   }
   if (trades.length === 0 && typeof window.TRADE_DATA !== 'undefined' && window.TRADE_DATA.length > 0) {
     trades = window.TRADE_DATA.map(t => ({
       id: t.id,
       date: t.date,
-      category: CATEGORY_MAP[t.category] || t.category,
+      category: EN_TO_JA[t.category] || t.category,
       item: t.item || '',
       profit: Number(t.profit) || 0,
       loss: Number(t.loss) || 0,
       memo: t.memo || ''
     }));
+    saveData();
+  } else if (stored) {
+    // 英語名の記録が混ざっている可能性があるため上書き保存
     saveData();
   }
 }
@@ -935,9 +942,9 @@ function triggerBackup() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast('Backup saved!');
+    showToast('バックアップを保存しました！');
   } catch(e) {
-    showToast('Backup failed', true);
+    showToast('バックアップの保存に失敗しました', true);
   }
 }
 
@@ -950,12 +957,12 @@ function formatDate(d) {
 }
 
 function formatYen(n) {
-  if (n === 0) return '\u00A50';
+  if (n === 0) return '¥0';
   const abs = Math.abs(n);
   const formatted = abs >= 10000
-    ? (abs/10000).toFixed(abs % 10000 === 0 ? 0 : 1) + '\u4E07'
+    ? (abs/10000).toFixed(abs % 10000 === 0 ? 0 : 1) + '万'
     : abs.toLocaleString();
-  return (n > 0 ? '+\u00A5' : '-\u00A5') + formatted;
+  return (n > 0 ? '+¥' : '-¥') + formatted;
 }
 
 function pnl(t) { return (t.profit || 0) - (t.loss || 0); }
@@ -972,8 +979,8 @@ function getDayPnl(dateStr) {
    CALENDAR RENDERING
    ============================================================ */
 function renderCalendar() {
-  const monthNames = ['1\u6708','2\u6708','3\u6708','4\u6708','5\u6708','6\u6708','7\u6708','8\u6708','9\u6708','10\u6708','11\u6708','12\u6708'];
-  document.getElementById('calMonth').textContent = currentYear + '\u5E74 ' + monthNames[currentMonth];
+  const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  document.getElementById('calMonth').textContent = currentYear + '年 ' + monthNames[currentMonth];
 
   const grid = document.getElementById('calGrid');
   grid.innerHTML = '';
@@ -1020,7 +1027,7 @@ function createCalCell(day, isOther, dateStr, dayPnl, count, isToday, isSelected
   if (!isOther && count > 0) {
     const cls = dayPnl >= 0 ? 'positive' : 'negative';
     html += '<div class="cal-pnl ' + cls + '">' + formatYen(dayPnl) + '</div>';
-    html += '<div class="cal-count">' + count + ' trades</div>';
+    html += '<div class="cal-count">' + count + '件</div>';
   }
   cell.innerHTML = html;
 
@@ -1042,14 +1049,14 @@ function renderDetail() {
   const total = dayTrades.reduce((s, t) => s + pnl(t), 0);
 
   const parts = selectedDate.split('-');
-  document.getElementById('detailDate').textContent = parts[0] + '/' + parts[1] + '/' + parts[2];
+  document.getElementById('detailDate').textContent = parts[0] + '年' + Number(parts[1]) + '月' + Number(parts[2]) + '日';
   const totalEl = document.getElementById('detailTotal');
   totalEl.textContent = formatYen(total);
   totalEl.className = 'detail-total ' + (total >= 0 ? 'positive' : 'negative');
 
   const list = document.getElementById('tradeList');
   if (dayTrades.length === 0) {
-    list.innerHTML = '<div class="empty-state">No trades on this day</div>';
+    list.innerHTML = '<div class="empty-state">この日の取引記録はありません</div>';
     return;
   }
 
@@ -1110,9 +1117,9 @@ let editingTradeId = null;
 
 function openAddTrade() {
   editingTradeId = null;
-  document.getElementById('tradeModalTitle').textContent = 'Add Trade';
+  document.getElementById('tradeModalTitle').textContent = '取引を追加';
   document.getElementById('tradeDate').value = selectedDate;
-  document.getElementById('tradeCategory').value = 'FX Day Trade';
+  document.getElementById('tradeCategory').value = 'デイトレ';
   document.getElementById('tradeItem').value = '';
   document.getElementById('tradeProfit').value = '';
   document.getElementById('tradeLoss').value = '';
@@ -1125,7 +1132,7 @@ function openEditTrade(id) {
   const t = trades.find(x => x.id === id);
   if (!t) return;
   editingTradeId = id;
-  document.getElementById('tradeModalTitle').textContent = 'Edit Trade';
+  document.getElementById('tradeModalTitle').textContent = '取引を編集';
   document.getElementById('tradeDate').value = t.date;
   document.getElementById('tradeCategory').value = t.category;
   document.getElementById('tradeItem').value = t.item || '';
@@ -1144,7 +1151,7 @@ function saveTrade() {
   const loss = parseInt(document.getElementById('tradeLoss').value) || 0;
   const memo = document.getElementById('tradeMemo').value.trim();
 
-  if (!date) { showToast('Please select a date', true); return; }
+  if (!date) { showToast('日付を選択してください', true); return; }
 
   if (editingTradeId) {
     const idx = trades.findIndex(t => t.id === editingTradeId);
@@ -1161,12 +1168,12 @@ function saveTrade() {
   renderCalendar();
   renderDetail();
   renderBottomSummary();
-  showToast(editingTradeId ? 'Trade updated' : 'Trade added');
+  showToast(editingTradeId ? '取引を更新しました' : '取引を追加しました');
 }
 
 function deleteTrade() {
   if (!editingTradeId) return;
-  if (!confirm('Delete this trade?')) return;
+  if (!confirm('この取引記録を削除しますか？')) return;
   trades = trades.filter(t => t.id !== editingTradeId);
   saveData();
   triggerBackup();
@@ -1174,7 +1181,7 @@ function deleteTrade() {
   renderCalendar();
   renderDetail();
   renderBottomSummary();
-  showToast('Trade deleted');
+  showToast('取引を削除しました');
 }
 
 /* ============================================================
@@ -1205,20 +1212,21 @@ function buildPeriodOptions() {
     [...months].sort().reverse().forEach(m => {
       const o = document.createElement('option');
       o.value = m;
-      o.textContent = m.replace('-', '/');
+      const parts = m.split('-');
+      o.textContent = parts[0] + '年' + Number(parts[1]) + '月';
       sel.appendChild(o);
     });
   } else if (summaryPeriod === 'yearly') {
     [...years].sort().reverse().forEach(y => {
       const o = document.createElement('option');
       o.value = y;
-      o.textContent = y;
+      o.textContent = y + '年';
       sel.appendChild(o);
     });
   } else {
     const o = document.createElement('option');
     o.value = 'all';
-    o.textContent = 'All Time';
+    o.textContent = 'すべての期間';
     sel.appendChild(o);
   }
   document.getElementById('summaryPeriodSelect').style.display = summaryPeriod === 'lifetime' ? 'none' : 'block';
@@ -1270,7 +1278,7 @@ function renderDonut(data) {
       maintainAspectRatio: false,
       cutout: '65%',
       plugins: {
-        legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 12 } },
+        legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 12 }, padding: 12 } },
         tooltip: {
           callbacks: { label: ctx => ctx.label + ': ' + formatYen(catMap[ctx.label]) }
         }
@@ -1288,7 +1296,7 @@ function renderDonut(data) {
         ctx.fillText(formatYen(total), width / 2, height / 2 - 8);
         ctx.fillStyle = '#94a3b8';
         ctx.font = '11px ' + getComputedStyle(document.body).fontFamily;
-        ctx.fillText('Total P&L', width / 2, height / 2 + 12);
+        ctx.fillText('合計損益', width / 2, height / 2 + 12);
         ctx.restore();
       }
     }]
@@ -1311,17 +1319,17 @@ function renderBarLine(data) {
   summaryChart = new Chart(document.getElementById('summaryChart'), {
     type: 'bar',
     data: {
-      labels: sortedDays.map(d => d.substring(5)),
+      labels: sortedDays.map(d => d.substring(5).replace('-', '/')),
       datasets: [
         {
-          label: 'Daily P&L',
+          label: '日別損益',
           data: values,
-          backgroundColor: values.map(v => v >= 0 ? 'rgba(16,185,129,0.6)' : 'rgba(239,68,68,0.6)'),
+          backgroundColor: values.map(v => v >= 0 ? 'rgba(16,185,129,0.7)' : 'rgba(239,68,68,0.7)'),
           borderRadius: 3,
           order: 2
         },
         {
-          label: 'Cumulative',
+          label: '累積損益',
           data: cumulative,
           type: 'line',
           borderColor: '#06b6d4',
@@ -1363,7 +1371,7 @@ function renderPerformance(data, container) {
     const cls = stats.pnl >= 0 ? 'positive' : 'negative';
     return '<div class="perf-card fade-in">' +
       '<div class="perf-name">' + escHtml(name) + '</div>' +
-      '<div class="perf-stat">' + stats.count + ' trades / ' + winRate + '% win</div>' +
+      '<div class="perf-stat">' + stats.count + '回取引 / 勝率 ' + winRate + '%</div>' +
       '<div class="perf-pnl ' + cls + '">' + formatYen(stats.pnl) + '</div>' +
     '</div>';
   }).join('');
@@ -1381,15 +1389,15 @@ function openImport() {
 
 function openExport() {
   closeMenu();
-  // Build period options for export
   const sel = document.getElementById('exportPeriod');
-  sel.innerHTML = '<option value="all">All Data</option>';
+  sel.innerHTML = '<option value="all">すべての期間</option>';
   const months = new Set();
   trades.forEach(t => months.add(t.date.substring(0, 7)));
   [...months].sort().reverse().forEach(m => {
     const o = document.createElement('option');
     o.value = m;
-    o.textContent = m.replace('-', '/');
+    const parts = m.split('-');
+    o.textContent = parts[0] + '年' + Number(parts[1]) + '月';
     sel.appendChild(o);
   });
   openModal('exportModal');
@@ -1417,15 +1425,18 @@ function handleFileImport(e) {
       try {
         const imported = JSON.parse(ev.target.result);
         if (Array.isArray(imported)) {
-          trades = imported;
+          trades = imported.map(t => ({
+            ...t,
+            category: EN_TO_JA[t.category] || t.category
+          }));
           saveData();
           renderCalendar();
           renderDetail();
           renderBottomSummary();
           closeModal('importModal');
-          showToast('Imported ' + imported.length + ' trades');
+          showToast(imported.length + '件の取引をインポートしました');
         }
-      } catch(err) { showToast('Invalid JSON file', true); }
+      } catch(err) { showToast('無効なJSONファイルです', true); }
     };
     reader.readAsText(file);
   } else {
@@ -1434,7 +1445,7 @@ function handleFileImport(e) {
         const wb = XLSX.read(ev.target.result, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
-        if (rows.length < 2) { showToast('Empty file', true); return; }
+        if (rows.length < 2) { showToast('空のファイルです', true); return; }
 
         const newTrades = [];
         for (let i = 1; i < rows.length; i++) {
@@ -1448,7 +1459,7 @@ function handleFileImport(e) {
             dateVal = String(dateVal).replace(/\//g, '-');
             if (dateVal.length === 9) dateVal = dateVal.substring(0,5) + '0' + dateVal.substring(5);
           }
-          const cat = CATEGORY_MAP[String(row[1] || '')] || String(row[1] || '');
+          const cat = EN_TO_JA[String(row[1] || '')] || String(row[1] || '');
           newTrades.push({
             id: genId(),
             date: dateVal,
@@ -1465,8 +1476,8 @@ function handleFileImport(e) {
         renderDetail();
         renderBottomSummary();
         closeModal('importModal');
-        showToast('Imported ' + newTrades.length + ' trades');
-      } catch(err) { showToast('Import failed: ' + err.message, true); }
+        showToast(newTrades.length + '件の取引をインポートしました');
+      } catch(err) { showToast('インポートに失敗しました: ' + err.message, true); }
     };
     reader.readAsArrayBuffer(file);
   }
@@ -1476,19 +1487,19 @@ function handleFileImport(e) {
 function doExportCsv() {
   const period = document.getElementById('exportPeriod').value;
   const data = period === 'all' ? trades : trades.filter(t => t.date.startsWith(period));
-  const header = 'Date,Category,Item,Profit,Loss,PnL,Memo\n';
+  const header = '日付,大項目,小項目,利益,損失,損益,メモ\n';
   const rows = data.map(t =>
     t.date + ',' + t.category + ',' + (t.item||'') + ',' + t.profit + ',' + t.loss + ',' + pnl(t) + ',' + (t.memo||'')
   ).join('\n');
-  downloadFile(header + rows, 'trade_export.csv', 'text/csv');
-  showToast('CSV exported');
+  downloadFile(header + rows, 'trade_export.csv', 'text/csv;charset=utf-8;');
+  showToast('CSVをダウンロードしました');
 }
 
 function doExportJson() {
   const period = document.getElementById('exportPeriod').value;
   const data = period === 'all' ? trades : trades.filter(t => t.date.startsWith(period));
   downloadFile(JSON.stringify(data, null, 2), 'trade_export.json', 'application/json');
-  showToast('JSON exported');
+  showToast('JSONをダウンロードしました');
 }
 
 function downloadFile(content, filename, type) {
