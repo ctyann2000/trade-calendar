@@ -789,15 +789,13 @@ body {
         <button class="icon-btn" id="closeSummaryModal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
       <div class="modal-body" style="display:flex; flex-direction:column;">
-        <div class="summary-tabs" id="summaryPresetTabs" style="margin-bottom:8px;">
-          <button class="summary-tab active" data-preset="month">今月</button>
-          <button class="summary-tab" data-preset="year">今年</button>
-          <button class="summary-tab" data-preset="all">全期間</button>
+        <div class="summary-tabs" id="summaryPeriodTabs" style="margin-bottom:10px;">
+          <button class="summary-tab active" data-period="monthly">月</button>
+          <button class="summary-tab" data-period="yearly">年</button>
+          <button class="summary-tab" data-period="lifetime">全期間</button>
         </div>
-        <div class="summary-range-box" style="display:flex; align-items:center; gap:6px; margin-bottom:12px; background:var(--bg-input); padding:8px 10px; border-radius:var(--radius-md); border:1px solid var(--border);">
-          <input type="date" id="sumStartDate" class="form-input" style="flex:1; padding:6px 8px; font-size:0.82rem;">
-          <span style="font-weight:700; color:var(--text-secondary);">～</span>
-          <input type="date" id="sumEndDate" class="form-input" style="flex:1; padding:6px 8px; font-size:0.82rem;">
+        <div class="form-group" id="summaryPeriodSelectBox" style="margin-bottom:12px;">
+          <select class="form-select" id="summaryPeriodValue"></select>
         </div>
         <div class="summary-tabs" id="summaryViewTabs" style="margin-bottom:12px;">
           <button class="summary-tab active" data-view="donut">割合 (円グラフ)</button>
@@ -1202,40 +1200,53 @@ let summaryView = 'donut';
 
 function openSummary() {
   closeMenu();
-  setSummaryPreset('month');
+  document.querySelectorAll('#summaryPeriodTabs .summary-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.period === summaryPeriod);
+  });
+  buildPeriodOptions();
   renderSummary();
   openModal('summaryModal');
 }
 
-function setSummaryPreset(preset) {
-  const startInput = document.getElementById('sumStartDate');
-  const endInput = document.getElementById('sumEndDate');
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
-
-  document.querySelectorAll('#summaryPresetTabs .summary-tab').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.preset === preset);
+function buildPeriodOptions() {
+  const sel = document.getElementById('summaryPeriodValue');
+  const box = document.getElementById('summaryPeriodSelectBox');
+  sel.innerHTML = '';
+  const months = new Set();
+  const years = new Set();
+  trades.forEach(t => {
+    months.add(t.date.substring(0, 7));
+    years.add(t.date.substring(0, 4));
   });
 
-  if (preset === 'month') {
-    startInput.value = `${y}-${m}-01`;
-    endInput.value = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
-  } else if (preset === 'year') {
-    startInput.value = `${y}-01-01`;
-    endInput.value = `${y}-12-31`;
-  } else if (preset === 'all') {
-    const dates = trades.map(t => t.date).sort();
-    startInput.value = dates[0] || '2025-01-01';
-    endInput.value = dates[dates.length - 1] || `${y}-12-31`;
+  if (summaryPeriod === 'monthly') {
+    box.style.display = 'block';
+    [...months].sort().reverse().forEach(m => {
+      const o = document.createElement('option');
+      o.value = m;
+      const parts = m.split('-');
+      const yy = parts[0].substring(2);
+      o.textContent = `${yy}/${parts[1]}`;
+      sel.appendChild(o);
+    });
+  } else if (summaryPeriod === 'yearly') {
+    box.style.display = 'block';
+    [...years].sort().reverse().forEach(y => {
+      const o = document.createElement('option');
+      o.value = y;
+      o.textContent = `${y}`;
+      sel.appendChild(o);
+    });
+  } else {
+    box.style.display = 'none';
   }
 }
 
 function getFilteredTrades() {
-  const start = document.getElementById('sumStartDate').value || '2000-01-01';
-  const end = document.getElementById('sumEndDate').value || '2099-12-31';
-  return trades.filter(t => t.date >= start && t.date <= end);
+  if (summaryPeriod === 'lifetime') return trades;
+  const val = document.getElementById('summaryPeriodValue').value;
+  if (!val) return trades;
+  return trades.filter(t => t.date.startsWith(val));
 }
 
 function renderSummary() {
@@ -1264,20 +1275,32 @@ function renderDonut(data) {
     if (!catMap[t.category]) catMap[t.category] = 0;
     catMap[t.category] += pnl(t);
   });
-  const labels = Object.keys(catMap);
-  const values = Object.values(catMap).map(Math.abs);
-  const colors = ['#10b981','#06b6d4','#f59e0b','#ef4444','#8b5cf6','#ec4899'];
+
+  const profitCats = Object.keys(catMap).filter(k => catMap[k] >= 0).sort((a,b) => catMap[b] - catMap[a]);
+  const lossCats = Object.keys(catMap).filter(k => catMap[k] < 0).sort((a,b) => catMap[a] - catMap[b]);
+  const sortedLabels = [...profitCats, ...lossCats];
+  const sortedValues = sortedLabels.map(k => Math.abs(catMap[k]));
+
+  const profitColors = ['#0ea5e9', '#3b82f6', '#06b6d4', '#6366f1', '#38bdf8', '#2563eb'];
+  const lossColors = ['#ef4444', '#f43f5e', '#dc2626', '#fb7185', '#e11d48', '#b91c1c'];
+
+  const colors = sortedLabels.map((k, idx) => {
+    if (catMap[k] >= 0) {
+      return profitColors[profitCats.indexOf(k) % profitColors.length];
+    } else {
+      return lossColors[lossCats.indexOf(k) % lossColors.length];
+    }
+  });
 
   const total = data.reduce((s,t) => s + pnl(t), 0);
-  const absTotal = values.reduce((s,v) => s + v, 0);
 
   summaryChart = new Chart(document.getElementById('summaryChart'), {
     type: 'doughnut',
     data: {
-      labels: labels,
+      labels: sortedLabels,
       datasets: [{
-        data: values,
-        backgroundColor: colors.slice(0, labels.length),
+        data: sortedValues,
+        backgroundColor: colors,
         borderWidth: 2,
         borderColor: '#0f172a'
       }]
@@ -1286,6 +1309,7 @@ function renderDonut(data) {
       responsive: true,
       maintainAspectRatio: false,
       cutout: '58%',
+      rotation: 0,
       plugins: {
         legend: {
           position: 'bottom',
@@ -1296,10 +1320,9 @@ function renderDonut(data) {
             generateLabels: chart => {
               const defaultLabels = Chart.overrides.doughnut.plugins.legend.labels.generateLabels(chart);
               return defaultLabels.map((item, i) => {
-                const val = values[i] || 0;
-                const pct = absTotal > 0 ? Math.round((val / absTotal) * 100) : 0;
-                const amt = formatYen(catMap[labels[i]]);
-                item.text = `${labels[i]} : ${pct}% (${amt})`;
+                const labelName = sortedLabels[i];
+                const amt = formatYen(catMap[labelName]);
+                item.text = `${labelName} : ${amt}`;
                 return item;
               });
             }
@@ -1308,9 +1331,8 @@ function renderDonut(data) {
         tooltip: {
           callbacks: {
             label: ctx => {
-              const i = ctx.dataIndex;
-              const pct = absTotal > 0 ? Math.round((values[i] / absTotal) * 100) : 0;
-              return `${labels[i]}: ${pct}% (${formatYen(catMap[labels[i]])})`;
+              const labelName = sortedLabels[ctx.dataIndex];
+              return `${labelName}: ${formatYen(catMap[labelName])}`;
             }
           }
         }
@@ -1325,20 +1347,19 @@ function renderDonut(data) {
             const meta = chart.getDatasetMeta(i);
             meta.data.forEach((element, index) => {
               const val = dataset.data[index];
-              const pct = absTotal > 0 ? Math.round((val / absTotal) * 100) : 0;
-              if (pct < 5) return;
+              if (val === 0) return;
               const { x, y } = element.tooltipPosition();
               ctx.save();
               ctx.fillStyle = '#ffffff';
               ctx.font = 'bold 13px ' + getComputedStyle(document.body).fontFamily;
               ctx.textAlign = 'center';
               ctx.textBaseline = 'middle';
-              ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+              ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
               ctx.shadowBlur = 4;
               const name = chart.data.labels[index];
               ctx.fillText(name, x, y - 8);
               ctx.font = '800 14px ' + getComputedStyle(document.body).fontFamily;
-              ctx.fillText(pct + '%', x, y + 8);
+              ctx.fillText(formatYen(catMap[name]), x, y + 8);
               ctx.restore();
             });
           });
@@ -1369,24 +1390,42 @@ function renderDonut(data) {
 
 function renderBarLine(data) {
   if (summaryChart) summaryChart.destroy();
-  const dayMap = {};
+  const map = {};
   data.forEach(t => {
-    if (!dayMap[t.date]) dayMap[t.date] = 0;
-    dayMap[t.date] += pnl(t);
+    let key = t.date;
+    if (summaryPeriod === 'yearly') {
+      key = t.date.substring(0, 7);
+    } else if (summaryPeriod === 'lifetime') {
+      key = t.date.substring(0, 4);
+    }
+    if (!map[key]) map[key] = 0;
+    map[key] += pnl(t);
   });
-  const sortedDays = Object.keys(dayMap).sort();
-  const values = sortedDays.map(d => dayMap[d]);
+
+  const sortedKeys = Object.keys(map).sort();
+  const values = sortedKeys.map(k => map[k]);
   const cumulative = [];
   let sum = 0;
   values.forEach(v => { sum += v; cumulative.push(sum); });
 
+  const labels = sortedKeys.map(k => {
+    if (summaryPeriod === 'yearly') {
+      return parseInt(k.substring(5), 10) + '月';
+    } else if (summaryPeriod === 'lifetime') {
+      return k + '年';
+    }
+    return k.substring(5).replace('-', '/');
+  });
+
+  const barLabel = summaryPeriod === 'yearly' ? '月別損益' : (summaryPeriod === 'lifetime' ? '年別損益' : '日別損益');
+
   summaryChart = new Chart(document.getElementById('summaryChart'), {
     type: 'bar',
     data: {
-      labels: sortedDays.map(d => d.substring(5).replace('-', '/')),
+      labels: labels,
       datasets: [
         {
-          label: '日別損益',
+          label: barLabel,
           data: values,
           backgroundColor: values.map(v => v >= 0 ? 'rgba(16,185,129,0.7)' : 'rgba(239,68,68,0.7)'),
           borderRadius: 3,
@@ -1400,7 +1439,7 @@ function renderBarLine(data) {
           backgroundColor: 'rgba(6,182,212,0.1)',
           fill: true,
           tension: 0.3,
-          pointRadius: 0,
+          pointRadius: 3,
           borderWidth: 2,
           order: 1
         }
@@ -1410,10 +1449,17 @@ function renderBarLine(data) {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
-        x: { ticks: { color: '#64748b', font: { size: 9 }, maxRotation: 45 }, grid: { color: 'rgba(42,53,74,0.5)' } },
-        y: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: 'rgba(42,53,74,0.5)' } }
+        x: { ticks: { color: '#94a3b8', font: { size: 11, weight: 'bold' }, maxRotation: 45 }, grid: { color: 'rgba(42,53,74,0.5)' } },
+        y: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { color: 'rgba(42,53,74,0.5)' } }
       },
-      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } }
+      plugins: {
+        legend: { labels: { color: '#f1f5f9', font: { size: 12, weight: 'bold' } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${formatYen(ctx.raw)}`
+          }
+        }
+      }
     }
   });
 }
@@ -1640,20 +1686,16 @@ function setupEvents() {
 
   // Summary modal
   document.getElementById('closeSummaryModal').addEventListener('click', () => closeModal('summaryModal'));
-  document.querySelectorAll('#summaryPresetTabs .summary-tab').forEach(btn => {
+  document.querySelectorAll('#summaryPeriodTabs .summary-tab').forEach(btn => {
     btn.addEventListener('click', () => {
-      setSummaryPreset(btn.dataset.preset);
+      document.querySelectorAll('#summaryPeriodTabs .summary-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      summaryPeriod = btn.dataset.period;
+      buildPeriodOptions();
       renderSummary();
     });
   });
-  document.getElementById('sumStartDate').addEventListener('change', () => {
-    document.querySelectorAll('#summaryPresetTabs .summary-tab').forEach(b => b.classList.remove('active'));
-    renderSummary();
-  });
-  document.getElementById('sumEndDate').addEventListener('change', () => {
-    document.querySelectorAll('#summaryPresetTabs .summary-tab').forEach(b => b.classList.remove('active'));
-    renderSummary();
-  });
+  document.getElementById('summaryPeriodValue').addEventListener('change', renderSummary);
   document.querySelectorAll('#summaryViewTabs .summary-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#summaryViewTabs .summary-tab').forEach(b => b.classList.remove('active'));
