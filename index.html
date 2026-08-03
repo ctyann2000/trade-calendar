@@ -503,10 +503,11 @@ body {
    ============================================================ */
 .summary-tabs {
   display: flex;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 6px;
   margin-bottom: 12px;
-  overflow-x: auto;
-  padding-bottom: 4px;
+  flex-shrink: 0;
+  min-height: 36px;
 }
 .summary-tab {
   padding: 6px 14px;
@@ -528,11 +529,13 @@ body {
 .chart-container {
   background: var(--bg-secondary);
   border-radius: var(--radius-md);
-  padding: 16px;
+  padding: 12px;
   margin-bottom: 14px;
   position: relative;
-  height: 380px;
-  min-height: 360px;
+  height: 250px;
+  min-height: 250px;
+  max-height: 250px;
+  flex-shrink: 0;
 }
 .perf-card {
   background: var(--bg-secondary);
@@ -574,6 +577,9 @@ body {
   text-align: left;
   padding: 10px 12px;
   border-bottom: 2px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 5;
 }
 .summary-table th.text-right,
 .summary-table td.text-right {
@@ -830,7 +836,7 @@ body {
         <span>収支サマリー分析</span>
         <button class="icon-btn" id="closeSummaryModal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
-      <div class="modal-body" style="display:flex; flex-direction:column; overflow-y:auto;">
+      <div class="modal-body" style="display:block; overflow-y:auto; padding-bottom:28px;">
         <div class="summary-tabs" id="summaryPeriodTabs" style="margin-bottom:10px;">
           <button class="summary-tab active" data-period="monthly">月</button>
           <button class="summary-tab" data-period="yearly">年</button>
@@ -845,7 +851,7 @@ body {
           <button class="summary-tab" data-view="performance">項目別成績</button>
         </div>
         <div id="chartSection" style="display:block;">
-          <div class="chart-container" id="chartContainer" style="min-height:350px; margin-bottom:14px;">
+          <div class="chart-container" id="chartContainer" style="height:250px; min-height:250px; max-height:250px; margin-bottom:14px;">
             <canvas id="summaryChart"></canvas>
           </div>
           <div id="chartTableContainer" style="overflow-x:auto; margin-bottom:12px;"></div>
