@@ -1437,13 +1437,16 @@ function updateItemSuggestions() {
     }
   });
 
-  // すべての履歴を表示対象とし、大項目が一致する頻度 > 全体の使用頻度 > アルファベット順 でソート
-  const uniqueItems = Object.keys(itemCounts);
+  // 大項目に一致し、かつ大項目名そのものではない履歴のみに絞り込む（完全連動）
+  const uniqueItems = Object.keys(itemCounts).filter(it => {
+    return itemCounts[it].matchCount > 0 && !customCategories.includes(it);
+  });
+  
+  // 頻度順 > アルファベット順 でソート
   uniqueItems.sort((a, b) => {
     const ca = itemCounts[a];
     const cb = itemCounts[b];
     if (cb.matchCount !== ca.matchCount) return cb.matchCount - ca.matchCount;
-    if (cb.totalCount !== ca.totalCount) return cb.totalCount - ca.totalCount;
     return a.localeCompare(b, 'ja');
   });
 
