@@ -829,10 +829,12 @@ body {
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">小項目（銘柄・ペア等）</label>
+          <label class="form-label" style="margin-bottom:8px; display:block;">小項目（銘柄・ペア等）</label>
+          <div id="itemSuggestions" style="display:flex; overflow-x:auto; gap:8px; margin-bottom:10px; padding-bottom:4px; white-space:nowrap; max-width:100%; -ms-overflow-style:none; scrollbar-width:none;">
+            <style>#itemSuggestions::-webkit-scrollbar { display:none; }</style>
+          </div>
           <input type="text" class="form-input" id="tradeItem" list="tradeItemList" placeholder="ドル円、ゴールド、日経225など..." autocomplete="off">
           <datalist id="tradeItemList"></datalist>
-          <div id="itemSuggestions" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;"></div>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -1434,13 +1436,12 @@ function updateItemSuggestions() {
     }
   });
 
-  const uniqueItems = Object.keys(itemCounts);
-  // 大項目が一致する頻度 > 全体の使用頻度 > アルファベット順 でソート
+  // 大項目に一致した履歴のみに絞り込み、頻度順 > アルファベット順 でソート
+  const uniqueItems = Object.keys(itemCounts).filter(it => itemCounts[it].matchCount > 0);
   uniqueItems.sort((a, b) => {
     const ca = itemCounts[a];
     const cb = itemCounts[b];
     if (cb.matchCount !== ca.matchCount) return cb.matchCount - ca.matchCount;
-    if (cb.totalCount !== ca.totalCount) return cb.totalCount - ca.totalCount;
     return a.localeCompare(b, 'ja');
   });
 
@@ -1452,20 +1453,25 @@ function updateItemSuggestions() {
     datalist.appendChild(opt);
   });
 
-  // クイック選択チップボタンを構築（最大12件まで表示）
+  // クイック選択チップボタンを構築（横スクロールなので件数上限を撤廃または多くしてもOK。ここでは最大20件とする）
   chipContainer.innerHTML = '';
-  uniqueItems.slice(0, 12).forEach(it => {
-    const chip = document.createElement('span');
-    chip.className = 'item-chip';
-    chip.textContent = it;
-    if (itemCounts[it].matchCount > 0) {
+  if (uniqueItems.length === 0) {
+    // 履歴がない場合はプレースホルダー的に非表示または空にする
+    chipContainer.style.display = 'none';
+  } else {
+    chipContainer.style.display = 'flex';
+    uniqueItems.slice(0, 20).forEach(it => {
+      const chip = document.createElement('span');
+      chip.className = 'item-chip';
+      chip.style.flexShrink = '0'; // 横スクロール内で潰れないようにする
       chip.style.borderColor = 'var(--accent)';
-    }
-    chip.addEventListener('click', () => {
-      document.getElementById('tradeItem').value = it;
+      chip.textContent = it;
+      chip.addEventListener('click', () => {
+        document.getElementById('tradeItem').value = it;
+      });
+      chipContainer.appendChild(chip);
     });
-    chipContainer.appendChild(chip);
-  });
+  }
 }
 
 /* ============================================================
