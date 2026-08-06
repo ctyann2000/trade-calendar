@@ -830,11 +830,13 @@ body {
         </div>
         <div class="form-group">
           <label class="form-label" style="margin-bottom:8px; display:block;">小項目（銘柄・ペア等）</label>
-          <div id="itemSuggestions" style="display:flex; overflow-x:auto; gap:8px; margin-bottom:10px; padding-bottom:4px; white-space:nowrap; max-width:100%; -ms-overflow-style:none; scrollbar-width:none;">
+          <div id="itemSuggestions" style="display:none; overflow-x:auto; gap:8px; margin-bottom:10px; padding-bottom:4px; white-space:nowrap; max-width:100%; -ms-overflow-style:none; scrollbar-width:none;">
             <style>#itemSuggestions::-webkit-scrollbar { display:none; }</style>
           </div>
-          <input type="text" class="form-input" id="tradeItem" list="tradeItemList" placeholder="ドル円、ゴールド、日経225など..." autocomplete="off">
-          <datalist id="tradeItemList"></datalist>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <input type="text" class="form-input" id="tradeItem" placeholder="ドル円、ゴールド、日経225など..." autocomplete="off" style="flex:1;">
+            <button type="button" class="btn btn-secondary" id="toggleSuggestionsBtn" style="padding:10px 14px; font-size:0.8rem; height:42px;">▼</button>
+          </div>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -1420,9 +1422,8 @@ function deleteCustomCategory() {
 
 function updateItemSuggestions() {
   const selCategory = document.getElementById('tradeCategory').value;
-  const datalist = document.getElementById('tradeItemList');
   const chipContainer = document.getElementById('itemSuggestions');
-  if (!datalist || !chipContainer) return;
+  if (!chipContainer) return;
 
   // 全取引から小項目(item)を集計
   const itemCounts = {};
@@ -1436,38 +1437,34 @@ function updateItemSuggestions() {
     }
   });
 
-  // 大項目に一致した履歴のみに絞り込み、頻度順 > アルファベット順 でソート
-  const uniqueItems = Object.keys(itemCounts).filter(it => itemCounts[it].matchCount > 0);
+  // すべての履歴を表示対象とし、大項目が一致する頻度 > 全体の使用頻度 > アルファベット順 でソート
+  const uniqueItems = Object.keys(itemCounts);
   uniqueItems.sort((a, b) => {
     const ca = itemCounts[a];
     const cb = itemCounts[b];
     if (cb.matchCount !== ca.matchCount) return cb.matchCount - ca.matchCount;
+    if (cb.totalCount !== ca.totalCount) return cb.totalCount - ca.totalCount;
     return a.localeCompare(b, 'ja');
-  });
-
-  // datalistを構築
-  datalist.innerHTML = '';
-  uniqueItems.forEach(it => {
-    const opt = document.createElement('option');
-    opt.value = it;
-    datalist.appendChild(opt);
   });
 
   // クイック選択チップボタンを構築（横スクロールなので件数上限を撤廃または多くしてもOK。ここでは最大20件とする）
   chipContainer.innerHTML = '';
   if (uniqueItems.length === 0) {
-    // 履歴がない場合はプレースホルダー的に非表示または空にする
     chipContainer.style.display = 'none';
   } else {
-    chipContainer.style.display = 'flex';
+    // 表示状態は▼ボタンのトグルに任せるため、ここでは表示切替(display='flex')を強制しない
     uniqueItems.slice(0, 20).forEach(it => {
       const chip = document.createElement('span');
       chip.className = 'item-chip';
       chip.style.flexShrink = '0'; // 横スクロール内で潰れないようにする
-      chip.style.borderColor = 'var(--accent)';
+      if (itemCounts[it].matchCount > 0) {
+        chip.style.borderColor = 'var(--accent)';
+      }
       chip.textContent = it;
       chip.addEventListener('click', () => {
         document.getElementById('tradeItem').value = it;
+        // チップを選択したらサジェスト領域を自動で閉じる
+        chipContainer.style.display = 'none';
       });
       chipContainer.appendChild(chip);
     });
@@ -2359,6 +2356,14 @@ function setupEvents() {
   document.getElementById('addCategoryBtn').addEventListener('click', addCustomCategory);
   document.getElementById('deleteCategoryBtn').addEventListener('click', deleteCustomCategory);
   document.getElementById('tradeCategory').addEventListener('change', updateItemSuggestions);
+  document.getElementById('toggleSuggestionsBtn').addEventListener('click', () => {
+    const chipContainer = document.getElementById('itemSuggestions');
+    if (chipContainer.style.display === 'none') {
+      chipContainer.style.display = 'flex';
+    } else {
+      chipContainer.style.display = 'none';
+    }
+  });
 
   // Summary modal
   document.getElementById('closeSummaryModal').addEventListener('click', () => closeModal('summaryModal'));
